@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { DollarSign, Users, Briefcase, TrendingUp, Calendar, Clock, Plus, Sparkles } from 'lucide-react';
+import { DollarSign, Users, Briefcase, TrendingUp, Calendar, Clock, Plus, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import ActivityModal from '../../components/ActivityModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -11,11 +11,15 @@ const Dashboard = () => {
     getTotalClients, 
     getActiveProjects, 
     activities,
+    getUpcomingDeadlines,
     isDarkMode 
   } = useApp();
 
   const [scrollY, setScrollY] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+
+  const upcomingDeadlines = getUpcomingDeadlines();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -108,6 +112,34 @@ const Dashboard = () => {
         break;
       default:
         break;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'text-red-600 bg-red-100';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'low':
+        return 'text-green-600 bg-green-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const formatDeadline = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+      return 'Today';
+    } else if (days === 1) {
+      return 'Tomorrow';
+    } else {
+      return `${days} days`;
     }
   };
 
@@ -232,9 +264,12 @@ const Dashboard = () => {
                 } group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all duration-300`}>
                   Recent Activity
                 </h2>
-                <button className={`text-xs sm:text-sm ${
-                  isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'
-                } font-medium transition-all duration-300 hover:scale-110`}>
+                <button 
+                  onClick={() => setIsActivityModalOpen(true)}
+                  className={`text-xs sm:text-sm ${
+                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'
+                  } font-medium transition-all duration-300 hover:scale-110`}
+                >
                   View all
                 </button>
               </div>
@@ -357,7 +392,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Upcoming section with parallax */}
+          {/* This Week section with working content */}
           <div 
             className={`mt-6 sm:mt-8 ${
               isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/50 border-gray-200'
@@ -377,19 +412,75 @@ const Dashboard = () => {
               } animate-pulse`} />
             </div>
             
-            <div className="text-center py-8 sm:py-12">
-              <Calendar className={`h-12 w-12 sm:h-16 sm:w-16 mx-auto ${
-                isDarkMode ? 'text-gray-600' : 'text-gray-400'
-              } mb-4 animate-bounce`} />
-              <p className={`text-xs sm:text-sm ${
-                isDarkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}>
-                No upcoming deadlines this week. Great job staying on top of things!
-              </p>
-            </div>
+            {upcomingDeadlines.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingDeadlines.map((deadline, index) => (
+                  <div 
+                    key={deadline.id}
+                    className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 hover:scale-105 transform-gpu animate-slide-in-up ${
+                      isDarkMode ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50/50 hover:bg-gray-100/50'
+                    }`}
+                    style={{
+                      animationDelay: `${index * 0.1}s`,
+                    }}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-2 rounded-lg ${
+                        deadline.type === 'project' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'
+                      }`}>
+                        {deadline.type === 'project' ? (
+                          <Briefcase className="h-4 w-4" />
+                        ) : (
+                          <DollarSign className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div>
+                        <p className={`font-medium ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {deadline.title}
+                        </p>
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {deadline.clientName}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(deadline.priority)}`}>
+                        {deadline.priority}
+                      </span>
+                      <span className={`text-sm font-medium ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        {formatDeadline(deadline.deadline)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 sm:py-12">
+                <CheckCircle className={`h-12 w-12 sm:h-16 sm:w-16 mx-auto ${
+                  isDarkMode ? 'text-green-400' : 'text-green-500'
+                } mb-4 animate-bounce`} />
+                <p className={`text-xs sm:text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  No upcoming deadlines this week. Great job staying on top of things!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Activity Modal */}
+      <ActivityModal 
+        isOpen={isActivityModalOpen}
+        onClose={() => setIsActivityModalOpen(false)}
+      />
     </div>
   );
 };

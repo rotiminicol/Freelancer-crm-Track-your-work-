@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface Client {
@@ -69,6 +68,15 @@ interface AppContextType {
   getTotalEarnings: () => number;
   getTotalClients: () => number;
   getActiveProjects: () => number;
+  getAllActivities: () => Activity[];
+  getUpcomingDeadlines: () => Array<{
+    id: string;
+    title: string;
+    type: 'project' | 'invoice';
+    deadline: string;
+    clientName: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -162,6 +170,33 @@ const defaultActivities: Activity[] = [
   },
 ];
 
+const defaultUpcomingDeadlines = [
+  {
+    id: '1',
+    title: 'Website Redesign - Final Review',
+    type: 'project' as const,
+    deadline: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
+    clientName: 'John Smith',
+    priority: 'high' as const,
+  },
+  {
+    id: '2',
+    title: 'Invoice Payment Due',
+    type: 'invoice' as const,
+    deadline: new Date(Date.now() + 86400000 * 4).toISOString(), // 4 days from now
+    clientName: 'Sarah Johnson',
+    priority: 'medium' as const,
+  },
+  {
+    id: '3',
+    title: 'Mobile App Development - Milestone 2',
+    type: 'project' as const,
+    deadline: new Date(Date.now() + 86400000 * 6).toISOString(), // 6 days from now
+    clientName: 'Tech Corp',
+    priority: 'high' as const,
+  },
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -170,6 +205,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [upcomingDeadlines] = useState(defaultUpcomingDeadlines);
 
   useEffect(() => {
     // Load data from localStorage
@@ -326,6 +362,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return projects.filter(project => project.status === 'active').length;
   };
 
+  const getAllActivities = () => activities;
+
+  const getUpcomingDeadlines = () => {
+    const now = new Date();
+    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    return upcomingDeadlines.filter(deadline => {
+      const deadlineDate = new Date(deadline.deadline);
+      return deadlineDate >= now && deadlineDate <= weekFromNow;
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -349,6 +397,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getTotalEarnings,
         getTotalClients,
         getActiveProjects,
+        getAllActivities,
+        getUpcomingDeadlines,
       }}
     >
       {children}

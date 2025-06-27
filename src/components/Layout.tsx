@@ -28,33 +28,55 @@ const Layout = () => {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Mobile menu button */}
-      <div className="md:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className={`p-2 rounded-lg shadow-lg border transition-colors ${
-            isDarkMode 
-              ? 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700' 
-              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
-        </button>
+      {/* Mobile Header */}
+      <div className="md:hidden">
+        <header className={`fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 border-b backdrop-blur-md ${
+          isDarkMode 
+            ? 'bg-gray-900/80 border-gray-700' 
+            : 'bg-white/80 border-gray-200'
+        }`}>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+              isDarkMode 
+                ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+          
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-sm">F</span>
+            </div>
+            <span className={`ml-2 text-lg font-semibold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              FreelanceCRM
+            </span>
+          </div>
+          
+          <div className="w-10"></div> {/* Spacer for balance */}
+        </header>
+        
+        {/* Content spacer */}
+        <div className="h-16"></div>
       </div>
 
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
-        <div className={`flex flex-col flex-grow ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-        } border-r shadow-sm`}>
+        <div className={`flex flex-col flex-grow backdrop-blur-md ${
+          isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+        } border-r shadow-xl`}>
           {/* Logo */}
           <div className="flex items-center px-6 py-5 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-200">
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <span className={`ml-3 text-lg font-semibold ${
@@ -67,19 +89,20 @@ const Layout = () => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigation.map((item) => {
+            {navigation.map((item, index) => {
               const Icon = item.icon;
               return (
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:translate-x-1 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25'
                       : isDarkMode
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-lg'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:shadow-lg'
                   }`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Icon className="h-5 w-5 mr-3" />
                   {item.name}
@@ -93,7 +116,7 @@ const Layout = () => {
             isDarkMode ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-200">
                 <span className="text-white font-medium text-sm">
                   {user?.name?.charAt(0) || 'U'}
                 </span>
@@ -119,43 +142,30 @@ const Layout = () => {
       {isMobileMenuOpen && (
         <>
           <div 
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out md:hidden ${
-            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          } border-r shadow-xl`}>
-            <div className="flex flex-col h-full">
-              {/* Logo */}
-              <div className="flex items-center px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">F</span>
-                  </div>
-                  <span className={`ml-3 text-lg font-semibold ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    FreelanceCRM
-                  </span>
-                </div>
-              </div>
-
+          <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-all duration-300 ease-out animate-slide-in-left md:hidden ${
+            isDarkMode ? 'bg-gray-900/95 border-gray-700' : 'bg-white/95 border-gray-200'
+          } border-r shadow-2xl backdrop-blur-md`}>
+            <div className="flex flex-col h-full pt-16">
               {/* Navigation */}
               <nav className="flex-1 px-4 py-6 space-y-1">
-                {navigation.map((item) => {
+                {navigation.map((item, index) => {
                   const Icon = item.icon;
                   return (
                     <NavLink
                       key={item.name}
                       to={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:translate-x-1 ${
                         isActive(item.href)
-                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/25'
                           : isDarkMode
-                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-lg'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:shadow-lg'
                       }`}
+                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <Icon className="h-5 w-5 mr-3" />
                       {item.name}
@@ -169,7 +179,7 @@ const Layout = () => {
                 isDarkMode ? 'border-gray-700' : 'border-gray-200'
               }`}>
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-200">
                     <span className="text-white font-medium text-sm">
                       {user?.name?.charAt(0) || 'U'}
                     </span>

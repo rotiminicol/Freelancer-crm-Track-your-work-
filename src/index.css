@@ -1,3 +1,31 @@
+:root {
+  --background-light: #ffffff;
+  --background-dark: #111827;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  background: var(--background-light);
+  transition: var(--transition);
+}
+
+.dark html {
+  background: var(--background-dark);
+}
+
+body {
+  min-height: 100vh;
+  background: inherit;
+  color: #111827;
+  transition: var(--transition);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.dark body {
+  color: #f9fafb;
+}
 
 @tailwind base;
 @tailwind components;
@@ -111,139 +139,62 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom animations and 3D effects */
+/* Professional animations and effects */
 @layer utilities {
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-  
-  @keyframes slideInLeft {
-    0% { transform: translateX(-100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-  }
-  
-  @keyframes slideInRight {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-  }
-  
-  @keyframes scaleIn {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  
-  @keyframes rotateIn {
-    0% { transform: rotate(-180deg) scale(0.8); opacity: 0; }
-    100% { transform: rotate(0deg) scale(1); opacity: 1; }
-  }
-  
-  @keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  
-  @keyframes glowPulse {
-    0%, 100% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); }
-    50% { box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6); }
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  @keyframes slideInUp {
-    0% { transform: translateY(100%); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-  }
-
-  @keyframes slideInDown {
-    0% { transform: translateY(-100%); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-  }
-
   @keyframes fadeIn {
     0% { opacity: 0; }
     100% { opacity: 1; }
   }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
+  
+  @keyframes slideInUp {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
   }
   
-  .animate-slide-in-left {
-    animation: slideInLeft 0.3s ease-out;
+  @keyframes slideInDown {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
   }
   
-  .animate-slide-in-right {
-    animation: slideInRight 0.3s ease-out;
+  @keyframes slideInLeft {
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
   }
   
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out;
-  }
-  
-  .animate-rotate-in {
-    animation: rotateIn 0.5s ease-out;
-  }
-  
-  .animate-bounce-in {
-    animation: bounceIn 0.6s ease-out;
-  }
-  
-  .animate-glow-pulse {
-    animation: glowPulse 2s ease-in-out infinite;
-  }
-
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-
-  .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-slide-in-up {
-    animation: slideInUp 0.5s ease-out;
-  }
-
-  .animate-slide-in-down {
-    animation: slideInDown 0.5s ease-out;
+  @keyframes slideInRight {
+    0% { transform: translateX(20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
+    animation: fadeIn 0.3s ease-out;
   }
-  
-  .transform-3d {
-    transform-style: preserve-3d;
+
+  .animate-slide-in-up {
+    animation: slideInUp 0.3s ease-out;
   }
-  
-  .backface-hidden {
-    backface-visibility: hidden;
+
+  .animate-slide-in-down {
+    animation: slideInDown 0.3s ease-out;
   }
-  
-  .perspective-1000 {
-    perspective: 1000px;
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
   }
-  
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
   .glass-effect {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .glass-effect-dark {
-    backdrop-filter: blur(10px);
-    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(16px);
+    background: rgba(17, 24, 39, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as api from '../lib/api';
 
 interface Client {
   id: string;
@@ -55,15 +56,17 @@ interface AppContextType {
   activities: Activity[];
   isAuthenticated: boolean;
   isDarkMode: boolean;
-  login: (email: string, password: string) => void;
-  signup: (name: string, email: string, password: string) => void;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void;
-  updateClient: (id: string, client: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
-  addInvoice: (invoice: Omit<Invoice, 'id' | 'createdAt'>) => void;
-  updateUser: (user: Partial<User>) => void;
+  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  updateClient: (id: string, client: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
+  addInvoice: (invoice: Omit<Invoice, 'id' | 'createdAt'>) => Promise<void>;
+  updateUser: (user: Partial<User>) => Promise<void>;
   toggleTheme: () => void;
   getTotalEarnings: () => number;
   getTotalClients: () => number;
@@ -89,114 +92,6 @@ export const useApp = () => {
   return context;
 };
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-const defaultClients: Client[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    phone: '+1 (555) 123-4567',
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@company.com',
-    phone: '+1 (555) 987-6543',
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-];
-
-const defaultProjects: Project[] = [
-  {
-    id: '1',
-    title: 'Website Redesign',
-    amount: 5000,
-    clientId: '1',
-    clientName: 'John Smith',
-    status: 'active',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Mobile App Development',
-    amount: 12000,
-    clientId: '2',
-    clientName: 'Sarah Johnson',
-    status: 'completed',
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-];
-
-const defaultInvoices: Invoice[] = [
-  {
-    id: '1',
-    clientId: '1',
-    clientName: 'John Smith',
-    total: 2500,
-    status: 'paid',
-    lineItems: [
-      {
-        id: '1',
-        description: 'UI/UX Design',
-        quantity: 1,
-        rate: 2500,
-        amount: 2500,
-      },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-];
-
-const defaultActivities: Activity[] = [
-  {
-    id: '1',
-    message: 'New invoice sent to John Smith',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    type: 'invoice',
-  },
-  {
-    id: '2',
-    message: 'Project "Website Redesign" marked as active',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    type: 'project',
-  },
-  {
-    id: '3',
-    message: 'New client Sarah Johnson added',
-    timestamp: new Date(Date.now() - 86400000).toISOString(),
-    type: 'client',
-  },
-];
-
-const defaultUpcomingDeadlines = [
-  {
-    id: '1',
-    title: 'Website Redesign - Final Review',
-    type: 'project' as const,
-    deadline: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
-    clientName: 'John Smith',
-    priority: 'high' as const,
-  },
-  {
-    id: '2',
-    title: 'Invoice Payment Due',
-    type: 'invoice' as const,
-    deadline: new Date(Date.now() + 86400000 * 4).toISOString(), // 4 days from now
-    clientName: 'Sarah Johnson',
-    priority: 'medium' as const,
-  },
-  {
-    id: '3',
-    title: 'Mobile App Development - Milestone 2',
-    type: 'project' as const,
-    deadline: new Date(Date.now() + 86400000 * 6).toISOString(), // 6 days from now
-    clientName: 'Tech Corp',
-    priority: 'high' as const,
-  },
-];
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -205,174 +100,170 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [upcomingDeadlines] = useState(defaultUpcomingDeadlines);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load data from localStorage
-    const savedUser = localStorage.getItem('crm-user');
-    const savedClients = localStorage.getItem('crm-clients');
-    const savedProjects = localStorage.getItem('crm-projects');
-    const savedInvoices = localStorage.getItem('crm-invoices');
-    const savedActivities = localStorage.getItem('crm-activities');
-    const savedTheme = localStorage.getItem('crm-theme');
-
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+  // Fetch all data after login
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      const [clientRes, projectRes, invoiceRes, activityRes, me] = await Promise.all([
+        api.getClients(),
+        api.getProjects(),
+        api.getInvoices(),
+        api.getActivityLogs(),
+        api.getMe(),
+      ]);
+      setClients(clientRes);
+      setProjects(projectRes);
+      setInvoices(invoiceRes);
+      setActivities(activityRes);
+      setUser(me);
       setIsAuthenticated(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch data');
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
-
-    setClients(savedClients ? JSON.parse(savedClients) : defaultClients);
-    setProjects(savedProjects ? JSON.parse(savedProjects) : defaultProjects);
-    setInvoices(savedInvoices ? JSON.parse(savedInvoices) : defaultInvoices);
-    setActivities(savedActivities ? JSON.parse(savedActivities) : defaultActivities);
-    setIsDarkMode(savedTheme === 'dark');
-  }, []);
-
-  const login = (email: string, password: string) => {
-    const user = {
-      id: generateId(),
-      name: 'John Doe',
-      email,
-    };
-    setUser(user);
-    setIsAuthenticated(true);
-    localStorage.setItem('crm-user', JSON.stringify(user));
   };
 
-  const signup = (name: string, email: string, password: string) => {
-    const user = {
-      id: generateId(),
-      name,
-      email,
-    };
-    setUser(user);
-    setIsAuthenticated(true);
-    localStorage.setItem('crm-user', JSON.stringify(user));
+  useEffect(() => {
+    // On mount, check for token and fetch user/data
+    if (api.getToken()) {
+      fetchAllData();
+    }
+    // Check for saved theme and apply it
+    const savedTheme = localStorage.getItem('crm-theme');
+    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.login(email, password);
+      await fetchAllData();
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signup = async (name: string, email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.signup(name, email, password);
+      await fetchAllData();
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('crm-user');
+    localStorage.removeItem('token');
+    setClients([]);
+    setProjects([]);
+    setInvoices([]);
+    setActivities([]);
   };
 
-  const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
-    const newClient = {
-      ...clientData,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    const updatedClients = [...clients, newClient];
-    setClients(updatedClients);
-    localStorage.setItem('crm-clients', JSON.stringify(updatedClients));
-
-    // Add activity
-    const activity = {
-      id: generateId(),
-      message: `New client ${newClient.name} added`,
-      timestamp: new Date().toISOString(),
-      type: 'client' as const,
-    };
-    const updatedActivities = [activity, ...activities];
-    setActivities(updatedActivities);
-    localStorage.setItem('crm-activities', JSON.stringify(updatedActivities));
+  // CLIENTS CRUD
+  const addClient = async (clientData: Omit<Client, 'id' | 'createdAt'>) => {
+    setLoading(true);
+    try {
+      await api.createClient(clientData);
+      const updated = await api.getClients();
+      setClients(updated);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const updateClient = (id: string, clientData: Partial<Client>) => {
-    const updatedClients = clients.map(client =>
-      client.id === id ? { ...client, ...clientData } : client
-    );
-    setClients(updatedClients);
-    localStorage.setItem('crm-clients', JSON.stringify(updatedClients));
+  const updateClient = async (id: string, clientData: Partial<Client>) => {
+    setLoading(true);
+    try {
+      await api.updateClient(Number(id), clientData);
+      const updated = await api.getClients();
+      setClients(updated);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const deleteClient = (id: string) => {
-    const updatedClients = clients.filter(client => client.id !== id);
-    setClients(updatedClients);
-    localStorage.setItem('crm-clients', JSON.stringify(updatedClients));
-  };
-
-  const addProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
-    const newProject = {
-      ...projectData,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    const updatedProjects = [...projects, newProject];
-    setProjects(updatedProjects);
-    localStorage.setItem('crm-projects', JSON.stringify(updatedProjects));
-
-    // Add activity
-    const activity = {
-      id: generateId(),
-      message: `New project "${newProject.title}" created`,
-      timestamp: new Date().toISOString(),
-      type: 'project' as const,
-    };
-    const updatedActivities = [activity, ...activities];
-    setActivities(updatedActivities);
-    localStorage.setItem('crm-activities', JSON.stringify(updatedActivities));
-  };
-
-  const addInvoice = (invoiceData: Omit<Invoice, 'id' | 'createdAt'>) => {
-    const newInvoice = {
-      ...invoiceData,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    const updatedInvoices = [...invoices, newInvoice];
-    setInvoices(updatedInvoices);
-    localStorage.setItem('crm-invoices', JSON.stringify(updatedInvoices));
-
-    // Add activity
-    const activity = {
-      id: generateId(),
-      message: `New invoice sent to ${newInvoice.clientName}`,
-      timestamp: new Date().toISOString(),
-      type: 'invoice' as const,
-    };
-    const updatedActivities = [activity, ...activities];
-    setActivities(updatedActivities);
-    localStorage.setItem('crm-activities', JSON.stringify(updatedActivities));
-  };
-
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('crm-user', JSON.stringify(updatedUser));
+  const deleteClient = async (id: string) => {
+    setLoading(true);
+    try {
+      await api.deleteClient(Number(id));
+      const updated = await api.getClients();
+      setClients(updated);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // PROJECTS CRUD
+  const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>) => {
+    setLoading(true);
+    try {
+      await api.createProject(projectData);
+      const updated = await api.getProjects();
+      setProjects(updated);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // INVOICES CRUD
+  const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'createdAt'>) => {
+    setLoading(true);
+    try {
+      await api.createInvoice(invoiceData);
+      const updated = await api.getInvoices();
+      setInvoices(updated);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // USER
+  const updateUser = async (userData: Partial<User>) => {
+    // Implement if you have a user update endpoint
+    setUser(prev => prev ? { ...prev, ...userData } : null);
+  };
+
+  // THEME
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
     localStorage.setItem('crm-theme', newTheme ? 'dark' : 'light');
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
+  // DASHBOARD STATS
   const getTotalEarnings = () => {
-    return invoices
-      .filter(invoice => invoice.status === 'paid')
-      .reduce((total, invoice) => total + invoice.total, 0);
+    return invoices.filter(invoice => invoice.status === 'paid').reduce((total, invoice) => total + invoice.total, 0);
   };
-
   const getTotalClients = () => clients.length;
-
-  const getActiveProjects = () => {
-    return projects.filter(project => project.status === 'active').length;
-  };
-
+  const getActiveProjects = () => projects.filter(project => project.status === 'active').length;
   const getAllActivities = () => activities;
-
-  const getUpcomingDeadlines = () => {
-    const now = new Date();
-    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    return upcomingDeadlines.filter(deadline => {
-      const deadlineDate = new Date(deadline.deadline);
-      return deadlineDate >= now && deadlineDate <= weekFromNow;
-    });
-  };
+  const getUpcomingDeadlines = () => [];
 
   return (
     <AppContext.Provider
@@ -384,6 +275,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activities,
         isAuthenticated,
         isDarkMode,
+        loading,
+        error,
         login,
         signup,
         logout,
